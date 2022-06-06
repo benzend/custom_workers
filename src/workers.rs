@@ -157,4 +157,40 @@ mod tests {
             (yay_i_work_fullfilled, but_did_i_really, i_mean_i_guess)
         )
     }
+
+    #[test]
+    fn works_with_strings() {
+        use crate::workers::{Worker, WorkerGroup};
+
+        let workers = vec![
+            Worker::new(|| "yay I work".to_string()),
+            Worker::new(|| "but did I really?".to_string()),
+            Worker::new(|| "I mean I guess".to_string()),
+        ];
+        let mut worker_group = WorkerGroup::new();
+        for worker in workers {
+            worker_group.add(worker);
+        }
+        let results = worker_group.join_workers();
+        let mut yay_i_work_fullfilled = false;
+        let mut but_did_i_really = false;
+        let mut i_mean_i_guess = false;
+
+        for r in results {
+            match r.result {
+                Some(msg) => match msg.as_str() {
+                    "yay I work" => yay_i_work_fullfilled = true,
+                    "but did I really?" => but_did_i_really = true,
+                    "I mean I guess" => i_mean_i_guess = true,
+                    _ => panic!("Test failed"),
+                },
+                _ => panic!("Test failed"),
+            }
+        }
+
+        assert_eq!(
+            (true, true, true),
+            (yay_i_work_fullfilled, but_did_i_really, i_mean_i_guess)
+        )
+    }
 }
