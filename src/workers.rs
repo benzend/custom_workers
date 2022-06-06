@@ -57,14 +57,11 @@ impl<T: Send + 'static> Worker<T> {
 }
 
 pub struct WorkerJoinResult<T, E> {
-    result: Option<T>,
-    error: Option<E>,
+    pub result: Option<T>,
+    pub error: Option<E>,
 }
 
 mod tests {
-    use std::thread;
-    use std::time::Duration;
-
     #[test]
     fn single_worker() {
         use crate::workers::{Worker, WorkerGroup};
