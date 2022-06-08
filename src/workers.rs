@@ -1,8 +1,8 @@
 use std::{
     any::Any,
-    sync::{Arc, Mutex},
     thread::{self, JoinHandle},
 };
+use uuid::Uuid;
 
 pub struct WorkerGroup<T> {
     workers: Vec<Worker<T>>,
@@ -47,16 +47,19 @@ impl<T: Send + 'static> WorkerGroup<T> {
 }
 
 pub struct Worker<T> {
+    pub id: Uuid,
     pub handle: Option<JoinHandle<T>>,
 }
 
 impl<T: Send + 'static> Worker<T> {
     pub fn new(f: Option<fn() -> T>) -> Worker<T> {
+        let id = Uuid::new_v4();
         match f {
             Some(f) => Worker {
+                id,
                 handle: Some(thread::spawn(move || f())),
             },
-            None => Worker { handle: None },
+            None => Worker { id, handle: None },
         }
     }
     pub fn new_job(&mut self, f: fn() -> T) {
