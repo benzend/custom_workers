@@ -4,8 +4,9 @@ use std::{
 };
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct WorkerGroup<T> {
-    workers: Vec<Worker<T>>,
+    pub workers: Vec<Worker<T>>,
 }
 
 impl<T: Send + 'static> WorkerGroup<T> {
@@ -49,6 +50,7 @@ impl<T: Send + 'static> WorkerGroup<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct Worker<T> {
     pub id: Uuid,
     pub handle: Option<JoinHandle<T>>,
@@ -206,5 +208,16 @@ mod tests {
             (true, true, true),
             (yay_i_work_fullfilled, but_did_i_really, i_mean_i_guess)
         )
+    }
+
+    #[test]
+    fn can_find_worker() {
+        use crate::workers::WorkerGroup;
+
+        let worker_group = WorkerGroup::<String>::new(Some(10));
+
+        if let Some(worker) = &worker_group.find_worker(worker_group.workers[2].id) {
+            assert_eq!(worker_group.workers[2].id, worker.id)
+        }
     }
 }
