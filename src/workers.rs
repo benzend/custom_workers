@@ -44,6 +44,9 @@ impl<T: Send + 'static> WorkerGroup<T> {
         }
         results
     }
+    pub fn find_worker(&self, worker_id: Uuid) -> Option<&Worker<T>> {
+        self.workers.iter().find(|w| w.id == worker_id)
+    }
 }
 
 pub struct Worker<T> {
