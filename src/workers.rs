@@ -49,10 +49,11 @@ pub struct Worker<T> {
 }
 
 impl<T: Send + 'static> Worker<T> {
-    pub fn new(f: fn() -> T) -> Worker<T> {
-        Worker {
-            handle: Some(thread::spawn(move || f())),
-        }
+    pub fn new() -> Worker<T> {
+        Worker { handle: None }
+    }
+    pub fn new_job(&mut self, f: fn() -> T) {
+        self.handle = Some(thread::spawn(move || f()))
     }
 }
 
