@@ -5,37 +5,39 @@ use std::{
 };
 
 pub struct WorkerGroup<T> {
-    workers: Arc<Mutex<Vec<Worker<T>>>>,
+    workers: Vec<Worker<T>>,
 }
 
-impl<T> WorkerGroup<T> {
-    pub fn new() -> WorkerGroup<T> {
-        WorkerGroup {
-            workers: Arc::new(Mutex::new(Vec::new())),
+impl<T: Send + 'static> WorkerGroup<T> {
+    pub fn new(worker_count: Option<usize>) -> WorkerGroup<T> {
+        let mut workers = Vec::new();
+
+        if let Some(count) = worker_count {
+            for _ in 0..count {
+                workers.push(Worker::<T>::new(None));
+            }
         }
+
+        WorkerGroup { workers }
     }
     pub fn add(&mut self, worker: Worker<T>) {
-        if let Ok(mut workers) = self.workers.lock() {
-            workers.push(worker)
-        }
+        self.workers.push(worker)
     }
     pub fn join_workers(&mut self) -> Vec<WorkerJoinResult<T, Box<dyn Any + Send>>> {
         let mut results: Vec<WorkerJoinResult<T, Box<dyn Any + Send>>> = Vec::new();
-        if let Ok(mut workers) = self.workers.lock() {
-            while workers.len() > 0 {
-                let worker = workers.pop();
-                if let Some(w) = worker {
-                    if let Some(h) = w.handle {
-                        match h.join() {
-                            Ok(res) => results.push(WorkerJoinResult {
-                                error: None,
-                                result: Some(res),
-                            }),
-                            Err(err) => results.push(WorkerJoinResult {
-                                error: Some(err),
-                                result: None,
-                            }),
-                        }
+        while self.workers.len() > 0 {
+            let worker = self.workers.pop();
+            if let Some(w) = worker {
+                if let Some(h) = w.handle {
+                    match h.join() {
+                        Ok(res) => results.push(WorkerJoinResult {
+                            error: None,
+                            result: Some(res),
+                        }),
+                        Err(err) => results.push(WorkerJoinResult {
+                            error: Some(err),
+                            result: None,
+                        }),
                     }
                 }
             }
@@ -73,7 +75,7 @@ mod tests {
         use crate::workers::{Worker, WorkerGroup};
 
         let workers = vec![Worker::new(Some(|| "yay I work"))];
-        let mut worker_group = WorkerGroup::new();
+        let mut worker_group = WorkerGroup::new(None);
         for worker in workers {
             worker_group.add(worker);
         }
@@ -90,7 +92,7 @@ mod tests {
             Worker::new(Some(|| "but did I really?")),
             Worker::new(Some(|| "I mean I guess")),
         ];
-        let mut worker_group = WorkerGroup::new();
+        let mut worker_group = WorkerGroup::new(None);
         for worker in workers {
             worker_group.add(worker);
         }
@@ -137,7 +139,7 @@ mod tests {
                 "I mean I guess"
             })),
         ];
-        let mut worker_group = WorkerGroup::new();
+        let mut worker_group = WorkerGroup::new(None);
         for worker in workers {
             worker_group.add(worker);
         }
@@ -173,7 +175,7 @@ mod tests {
             Worker::new(Some(|| "but did I really?".to_string())),
             Worker::new(Some(|| "I mean I guess".to_string())),
         ];
-        let mut worker_group = WorkerGroup::new();
+        let mut worker_group = WorkerGroup::new(None);
         for worker in workers {
             worker_group.add(worker);
         }
