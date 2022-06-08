@@ -49,8 +49,13 @@ pub struct Worker<T> {
 }
 
 impl<T: Send + 'static> Worker<T> {
-    pub fn new() -> Worker<T> {
-        Worker { handle: None }
+    pub fn new(f: Option<fn() -> T>) -> Worker<T> {
+        match f {
+            Some(f) => Worker {
+                handle: Some(thread::spawn(move || f())),
+            },
+            None => Worker { handle: None },
+        }
     }
     pub fn new_job(&mut self, f: fn() -> T) {
         self.handle = Some(thread::spawn(move || f()))
@@ -67,7 +72,7 @@ mod tests {
     fn single_worker() {
         use crate::workers::{Worker, WorkerGroup};
 
-        let workers = vec![Worker::new(|| "yay I work")];
+        let workers = vec![Worker::new(Some(|| "yay I work"))];
         let mut worker_group = WorkerGroup::new();
         for worker in workers {
             worker_group.add(worker);
@@ -81,9 +86,9 @@ mod tests {
         use crate::workers::{Worker, WorkerGroup};
 
         let workers = vec![
-            Worker::new(|| "yay I work"),
-            Worker::new(|| "but did I really?"),
-            Worker::new(|| "I mean I guess"),
+            Worker::new(Some(|| "yay I work")),
+            Worker::new(Some(|| "but did I really?")),
+            Worker::new(Some(|| "I mean I guess")),
         ];
         let mut worker_group = WorkerGroup::new();
         for worker in workers {
@@ -119,18 +124,18 @@ mod tests {
         use std::time::Duration;
 
         let workers = vec![
-            Worker::new(|| {
+            Worker::new(Some(|| {
                 thread::sleep(Duration::from_secs(1));
                 "yay I work"
-            }),
-            Worker::new(|| {
+            })),
+            Worker::new(Some(|| {
                 thread::sleep(Duration::from_secs(1));
                 "but did I really?"
-            }),
-            Worker::new(|| {
+            })),
+            Worker::new(Some(|| {
                 thread::sleep(Duration::from_secs(1));
                 "I mean I guess"
-            }),
+            })),
         ];
         let mut worker_group = WorkerGroup::new();
         for worker in workers {
@@ -164,9 +169,9 @@ mod tests {
         use crate::workers::{Worker, WorkerGroup};
 
         let workers = vec![
-            Worker::new(|| "yay I work".to_string()),
-            Worker::new(|| "but did I really?".to_string()),
-            Worker::new(|| "I mean I guess".to_string()),
+            Worker::new(Some(|| "yay I work".to_string())),
+            Worker::new(Some(|| "but did I really?".to_string())),
+            Worker::new(Some(|| "I mean I guess".to_string())),
         ];
         let mut worker_group = WorkerGroup::new();
         for worker in workers {
