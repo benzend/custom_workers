@@ -214,10 +214,36 @@ mod tests {
     fn can_find_worker() {
         use crate::workers::WorkerGroup;
 
-        let worker_group = WorkerGroup::<String>::new(Some(10));
+        let worker_group = WorkerGroup::<()>::new(Some(10));
 
         if let Some(worker) = &worker_group.find_worker(worker_group.workers[2].id) {
             assert_eq!(worker_group.workers[2].id, worker.id)
         }
+    }
+
+    #[test]
+    fn can_add_job_to_worker_in_worker_group() {
+        use crate::workers::WorkerGroup;
+
+        let mut worker_group = WorkerGroup::<&str>::new(Some(10));
+
+        worker_group.workers[0].new_job(|| "wow");
+
+        let results = worker_group.join_workers();
+
+        let mut found = false;
+
+        for r in results {
+            match r.result {
+                Some(r) => {
+                    if r == "wow" {
+                        found = true
+                    }
+                }
+                _ => (),
+            }
+        }
+
+        assert!(found);
     }
 }
